@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>优选商城 - 品质生活从这里开始</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 用户登录模态框 -->
+    <div class="modal" id="login-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>用户登录</h2>
+                <button class="close-btn" onclick="closeLoginModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">邮箱</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">密码</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="login-btn">登录</button>
+                    <p class="auth-switch">
+                        还没有账号？<a href="#" onclick="showRegisterModal()">立即注册</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户注册模态框 -->
+    <div class="modal" id="register-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>用户注册</h2>
+                <button class="close-btn" onclick="closeRegisterModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-email">邮箱</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">密码</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-username">用户名</label>
+                        <input type="text" id="register-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-phone">手机号</label>
+                        <input type="tel" id="register-phone">
+                    </div>
+                    <button type="submit" class="register-btn">注册</button>
+                    <p class="auth-switch">
+                        已有账号？<a href="#" onclick="showLoginModal()">立即登录</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功提示 -->
+    <div class="success-message" id="success-message" style="display: none;">
+        <i class="fas fa-check-circle"></i>
+        <p id="success-text">操作成功！</p>
+    </div>
+    <!-- 导航栏 -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <a href="index.html">优选商城</a>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link active">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="products.html" class="nav-link">产品</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="cart.html" class="nav-link">
+                            <i class="fas fa-shopping-cart"></i>
+                            购物车
+                            <span class="cart-count">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="user-menu">
+                        <a href="#" class="nav-link" onclick="showLoginModal()">
+                            <i class="fas fa-user"></i>
+                            登录
+                        </a>
+                    </li>
+                </ul>
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 英雄区域 -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>品质生活 优选好物</h1>
+            <p>精选全球优质商品，为您的生活增添色彩</p>
+            <button class="cta-button" onclick="location.href='products.html'">
+                立即选购
+            </button>
+        </div>
+    </section>
+
+    <!-- 特色产品 -->
+    <section class="featured-products">
+        <div class="container">
+            <h2 class="section-title">热门产品</h2>
+            <div class="product-grid" id="featured-products">
+                <!-- 产品将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 服务特色 -->
+    <section class="features">
+        <div class="container">
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <i class="fas fa-truck"></i>
+                    <h3>免费配送</h3>
+                    <p>满199元免费配送，24小时内发货</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>品质保证</h3>
+                    <p>100%正品保证，假一赔十</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-undo"></i>
+                    <h3>7天退换</h3>
+                    <p>7天无理由退换货，让您购物无忧</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-headset"></i>
+                    <h3>24小时客服</h3>
+                    <p>专业客服团队，随时为您服务</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <p>优选商城致力于为您提供高品质的商品和优质的服务体验。</p>
+                </div>
+                <div class="footer-section">
+                    <h3>快速链接</h3>
+                    <ul>
+                        <li><a href="index.html">首页</a></li>
+                        <li><a href="products.html">产品</a></li>
+                        <li><a href="cart.html">购物车</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <p><i class="fas fa-phone"></i> 400-123-4567</p>
+                    <p><i class="fas fa-envelope"></i> service@youxuan.com</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 优选商城. 保留所有权利.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="supabase-config.js"></script>
+    <script src="supabase-client.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

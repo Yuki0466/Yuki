@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品详情 - 优选商城</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 成功提示 -->
+    <div class="success-message" id="success-message" style="display: none;">
+        <i class="fas fa-check-circle"></i>
+        <p id="success-text">操作成功！</p>
+    </div>
+    <!-- 导航栏 -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <a href="index.html">优选商城</a>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="products.html" class="nav-link">产品</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="cart.html" class="nav-link">
+                            <i class="fas fa-shopping-cart"></i>
+                            购物车
+                            <span class="cart-count">0</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 产品详情主体 -->
+    <main class="product-detail-main">
+        <div class="container">
+            <!-- 面包屑导航 -->
+            <nav class="breadcrumb">
+                <a href="index.html">首页</a>
+                <span class="separator">/</span>
+                <a href="products.html">产品</a>
+                <span class="separator">/</span>
+                <span class="current">产品详情</span>
+            </nav>
+
+            <!-- 产品详情 -->
+            <section class="product-detail">
+                <div class="product-detail-container">
+                    <div class="product-images">
+                        <div class="main-image">
+                            <img id="main-product-image" src="" alt="产品图片">
+                        </div>
+                        <div class="thumbnail-images">
+                            <div class="thumbnail active">
+                                <img src="" alt="产品图片1">
+                            </div>
+                            <div class="thumbnail">
+                                <img src="" alt="产品图片2">
+                            </div>
+                            <div class="thumbnail">
+                                <img src="" alt="产品图片3">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-info">
+                        <h1 id="product-name">产品名称</h1>
+                        <div class="product-meta">
+                            <div class="product-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                                <span>(128 评价)</span>
+                            </div>
+                            <div class="product-sold">已售 2,345 件</div>
+                        </div>
+                        
+                        <div class="product-price">
+                            <span class="current-price" id="product-price">¥0</span>
+                            <span class="original-price" id="product-original-price">¥0</span>
+                        </div>
+
+                        <div class="product-description">
+                            <p id="product-description">产品描述</p>
+                        </div>
+
+                        <div class="product-options">
+                            <div class="quantity-selector">
+                                <label for="quantity">数量：</label>
+                                <div class="quantity-control">
+                                    <button id="decrease-quantity" onclick="changeQuantity(-1)">-</button>
+                                    <input type="number" id="quantity" value="1" min="1" max="99">
+                                    <button id="increase-quantity" onclick="changeQuantity(1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="product-actions">
+                            <button class="add-to-cart-btn" onclick="addToCart()">
+                                <i class="fas fa-shopping-cart"></i>
+                                加入购物车
+                            </button>
+                            <button class="buy-now-btn" onclick="buyNow()">
+                                立即购买
+                            </button>
+                        </div>
+
+                        <div class="product-features">
+                            <div class="feature">
+                                <i class="fas fa-truck"></i>
+                                <span>免费配送</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>正品保证</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-undo"></i>
+                                <span>7天退换</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 产品详情标签页 -->
+            <section class="product-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="details">产品详情</button>
+                    <button class="tab-btn" data-tab="specs">规格参数</button>
+                    <button class="tab-btn" data-tab="reviews">用户评价</button>
+                </div>
+                
+                <div class="tab-content">
+                    <div class="tab-pane active" id="details">
+                        <div class="product-details-content">
+                            <h3>产品特点</h3>
+                            <ul>
+                                <li>高品质材料制作，经久耐用</li>
+                                <li>人性化设计，使用便捷</li>
+                                <li>环保材质，安全无污染</li>
+                                <li>精美包装，送礼自用两相宜</li>
+                            </ul>
+                            <h3>使用说明</h3>
+                            <p>请按照产品说明书正确使用，避免使用不当造成损坏。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane" id="specs">
+                        <table class="specs-table">
+                            <tr>
+                                <th>品牌</th>
+                                <td id="spec-brand">-</td>
+                            </tr>
+                            <tr>
+                                <th>型号</th>
+                                <td id="spec-model">-</td>
+                            </tr>
+                            <tr>
+                                <th>颜色</th>
+                                <td id="spec-color">-</td>
+                            </tr>
+                            <tr>
+                                <th>尺寸</th>
+                                <td id="spec-size">-</td>
+                            </tr>
+                            <tr>
+                                <th>重量</th>
+                                <td id="spec-weight">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="tab-pane" id="reviews">
+                        <div class="reviews-summary">
+                            <div class="average-rating">
+                                <span class="rating-number">4.5</span>
+                                <div class="stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                                <span class="total-reviews">128 条评价</span>
+                            </div>
+                        </div>
+                        
+                        <div class="reviews-list">
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <span class="review-author">张三</span>
+                                    <div class="review-rating">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    <span class="review-date">2024-01-15</span>
+                                </div>
+                                <div class="review-content">
+                                    <p>产品质量很好，物超所值，推荐购买！</p>
+                                </div>
+                            </div>
+                            
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <span class="review-author">李四</span>
+                                    <div class="review-rating">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="far fa-star"></i>
+                                    </div>
+                                    <span class="review-date">2024-01-10</span>
+                                </div>
+                                <div class="review-content">
+                                    <p>产品不错，包装精美，发货速度快。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <p>优选商城致力于为您提供高品质的商品和优质的服务体验。</p>
+                </div>
+                <div class="footer-section">
+                    <h3>快速链接</h3>
+                    <ul>
+                        <li><a href="index.html">首页</a></li>
+                        <li><a href="products.html">产品</a></li>
+                        <li><a href="cart.html">购物车</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <p><i class="fas fa-phone"></i> 400-123-4567</p>
+                    <p><i class="fas fa-envelope"></i> service@youxuan.com</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 优选商城. 保留所有权利.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="supabase-config.js"></script>
+    <script src="supabase-client.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
