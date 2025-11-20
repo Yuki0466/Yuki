@@ -3,8 +3,8 @@
 
 const SUPABASE_CONFIG = {
     // 从 Supabase 项目设置中获取这些值
-    url: 'YOUR_SUPABASE_URL', // 例如: https://your-project-id.supabase.co
-    anonKey: 'YOUR_SUPABASE_ANON_KEY', // 匿名密钥
+    url: 'https://mttizdeqmqvpmnwqrfgw.supabase.co', // 例如: https://your-project-id.supabase.co
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10dGl6ZGVxbXF2cG1ud3FyZmd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzU4MjMsImV4cCI6MjA3OTIxMTgyM30.3h-YKDqf8umJIO93cNKe0Lzb-VWibQTL8t9smFoZ3D8', // 匿名密钥
     
     // 可选：如果需要服务端权限
     serviceRoleKey: 'YOUR_SUPABASE_SERVICE_ROLE_KEY',
