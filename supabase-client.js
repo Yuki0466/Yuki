@@ -1,21 +1,28 @@
-// Supabase 客户端封装
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/index.js';
+// Supabase 客户端封装类
+// 使用方式：直接加载，无需导入模块
 
 class SupabaseManager {
     constructor() {
         this.client = null;
         this.user = null;
         this.initialized = false;
+        this.listeners = {};
         this.init();
     }
 
     // 初始化 Supabase 客户端
     async init() {
         try {
+            // 检查依赖
             if (typeof SUPABASE_CONFIG === 'undefined') {
                 throw new Error('Supabase 配置未找到，请确保已加载 supabase-config.js');
             }
 
+            if (typeof createClient === 'undefined') {
+                throw new Error('Supabase 客户端未加载，请确保已加载 Supabase CDN');
+            }
+
+            // 创建客户端实例
             this.client = createClient(
                 SUPABASE_CONFIG.url,
                 SUPABASE_CONFIG.anonKey,
@@ -25,14 +32,14 @@ class SupabaseManager {
                         autoRefreshToken: true,
                         detectSessionInUrl: true
                     },
-                    realtime: SUPABASE_CONFIG.features.realtime,
+                    realtime: SUPABASE_CONFIG.features?.realtime || true,
                     db: {
                         schema: 'public'
                     }
                 }
             );
 
-            // 获取当前用户
+            // 获取当前用户会话
             const { data: { user }, error } = await this.client.auth.getUser();
             if (!error && user) {
                 this.user = user;
@@ -51,9 +58,11 @@ class SupabaseManager {
             });
 
             this.initialized = true;
-            console.log('Supabase 客户端初始化成功');
+            console.log('✅ Supabase 客户端初始化成功');
+
         } catch (error) {
-            console.error('Supabase 初始化失败:', error);
+            console.error('❌ Supabase 初始化失败:', error.message);
+            this.emit('initError', error);
             throw error;
         }
     }
@@ -61,13 +70,12 @@ class SupabaseManager {
     // 确保已初始化
     ensureInitialized() {
         if (!this.initialized) {
-            throw new Error('Supabase 客户端未初始化');
+            throw new Error('Supabase 客户端未初始化，请等待 init() 完成');
         }
     }
 
-    // 事件监听器
-    listeners = {};
-
+    // ==================== 事件系统 ====================
+    
     on(event, callback) {
         if (!this.listeners[event]) {
             this.listeners[event] = [];
@@ -97,7 +105,18 @@ class SupabaseManager {
 
             if (error) throw error;
 
-            // 创建用户资料记录
+            // 如果注册成功，创建用户资料
+            if (data.user && !data.session) {
+                // 邮箱验证流程
+                return { 
+                    data: { 
+                        message: '注册成功，请检查邮箱验证链接', 
+                        user: data.user 
+                    }, 
+                    error: null 
+                };
+            }
+
             if (data.user) {
                 await this.createUserProfile(data.user, metadata);
             }
@@ -149,7 +168,7 @@ class SupabaseManager {
         this.ensureInitialized();
         try {
             const { data, error } = await this.client.auth.resetPasswordForEmail(email, {
-                redirectTo: `${SUPABASE_CONFIG.auth.redirectTo}/reset-password`
+                redirectTo: `${window.location.origin}/reset-password`
             });
 
             return { data, error };
@@ -163,7 +182,7 @@ class SupabaseManager {
         this.ensureInitialized();
         try {
             const { data, error } = await this.client
-                .from(SUPABASE_CONFIG.database.tables.USERS)
+                .from('users')
                 .upsert({
                     id: user.id,
                     email: user.email,
@@ -193,25 +212,35 @@ class SupabaseManager {
                 .from(table)
                 .select(options.columns || '*', { count: 'exact' });
 
+            // 应用过滤器
             if (options.filters) {
                 Object.entries(options.filters).forEach(([key, value]) => {
                     if (Array.isArray(value)) {
                         query = query.in(key, value);
+                    } else if (typeof value === 'object' && value !== null) {
+                        // 处理范围查询，如 { gte: 100 }
+                        if (value.gte !== undefined) query = query.gte(key, value.gte);
+                        if (value.lte !== undefined) query = query.lte(key, value.lte);
+                        if (value.gt !== undefined) query = query.gt(key, value.gt);
+                        if (value.lt !== undefined) query = query.lt(key, value.lt);
                     } else {
                         query = query.eq(key, value);
                     }
                 });
             }
 
+            // 应用搜索
             if (options.search) {
                 query = query.ilike('name', `%${options.search}%`);
             }
 
+            // 应用排序
             if (options.orderBy) {
                 const { column, ascending = true } = options.orderBy;
                 query = query.order(column, { ascending });
             }
 
+            // 应用分页
             if (options.range) {
                 const { from, to } = options.range;
                 query = query.range(from, to);
@@ -232,8 +261,7 @@ class SupabaseManager {
             const { data: result, error } = await this.client
                 .from(table)
                 .insert(data, options)
-                .select(options.select || '*')
-                .single();
+                .select(options.select || '*');
 
             return { data: result, error };
         } catch (error) {
@@ -250,8 +278,9 @@ class SupabaseManager {
                 .update(data, options)
                 .select(options.select || '*');
 
+            // 应用过滤条件
             if (filter.id) {
-                query = query.eq('id', filter.id).single();
+                query = query.eq('id', filter.id);
             } else {
                 Object.entries(filter).forEach(([key, value]) => {
                     query = query.eq(key, value);
@@ -272,6 +301,7 @@ class SupabaseManager {
         try {
             let query = this.client.from(table).delete();
 
+            // 应用过滤条件
             if (filter.id) {
                 query = query.eq('id', filter.id);
             } else {
@@ -300,7 +330,7 @@ class SupabaseManager {
             sortBy = 'created_at',
             sortOrder = 'desc',
             page = 1,
-            limit = SUPABASE_CONFIG.database.pagination.defaultLimit
+            limit = 20
         } = options;
 
         const filters = { is_active: true };
@@ -314,7 +344,11 @@ class SupabaseManager {
         }
 
         if (maxPrice !== undefined) {
-            filters.price = { ...filters.price, lte: maxPrice };
+            if (filters.price) {
+                filters.price.lte = maxPrice;
+            } else {
+                filters.price = { lte: maxPrice };
+            }
         }
 
         const range = {
@@ -322,7 +356,7 @@ class SupabaseManager {
             to: page * limit - 1
         };
 
-        return this.select(SUPABASE_CONFIG.database.tables.PRODUCTS, {
+        return this.select('products', {
             filters,
             search,
             orderBy: { column: sortBy, ascending: sortOrder === 'asc' },
@@ -332,7 +366,7 @@ class SupabaseManager {
 
     // 获取单个产品
     async getProduct(productId) {
-        const { data, error } = await this.select(SUPABASE_CONFIG.database.tables.PRODUCTS, {
+        const { data, error } = await this.select('products', {
             filters: { id: productId, is_active: true }
         });
 
@@ -347,37 +381,8 @@ class SupabaseManager {
             return { data: [], error: new Error('用户未登录') };
         }
 
-        return this.select(SUPABASE_CONFIG.database.tables.CART_ITEMS, {
-            filters: { user_id: this.user.id },
-            orderBy: { column: 'created_at', ascending: false }
-        });
-    }
-
-    // 添加到购物车
-    async addToCart(productId, quantity = 1) {
-        if (!this.user) {
-            return { data: null, error: new Error('用户未登录') };
-        }
-
-        // 检查产品是否存在
-        const { data: product, error: productError } = await this.getProduct(productId);
-        if (productError || !product) {
-            return { data: null, error: new Error('产品不存在') };
-        }
-
-        // 检查库存
-        if (product.stock_quantity < quantity) {
-            return { data: null, error: new Error('库存不足') };
-        }
-
-        // 使用 upsert 更新或插入购物车项目
         const { data, error } = await this.client
-            .from(SUPABASE_CONFIG.database.tables.CART_ITEMS)
-            .upsert({
-                user_id: this.user.id,
-                product_id: productId,
-                quantity
-            })
+            .from('cart_items')
             .select(`
                 *,
                 products (
@@ -387,9 +392,52 @@ class SupabaseManager {
                     images
                 )
             `)
-            .single();
+            .eq('user_id', this.user.id);
 
         return { data, error };
+    }
+
+    // 添加到购物车
+    async addToCart(productId, quantity = 1) {
+        if (!this.user) {
+            return { data: null, error: new Error('用户未登录') };
+        }
+
+        try {
+            // 检查产品是否存在
+            const { data: product, error: productError } = await this.getProduct(productId);
+            if (productError || !product) {
+                return { data: null, error: new Error('产品不存在') };
+            }
+
+            // 检查库存
+            if (product.stock_quantity < quantity) {
+                return { data: null, error: new Error('库存不足') };
+            }
+
+            // 使用 upsert 更新或插入购物车项目
+            const { data, error } = await this.client
+                .from('cart_items')
+                .upsert({
+                    user_id: this.user.id,
+                    product_id: productId,
+                    quantity
+                })
+                .select(`
+                    *,
+                    products (
+                        id,
+                        name,
+                        price,
+                        images
+                    )
+                `)
+                .single();
+
+            return { data, error };
+        } catch (error) {
+            return { data: null, error };
+        }
     }
 
     // 更新购物车数量
@@ -402,7 +450,7 @@ class SupabaseManager {
             return this.removeFromCart(itemId);
         }
 
-        return this.update(SUPABASE_CONFIG.database.tables.CART_ITEMS, 
+        return this.update('cart_items', 
             { quantity },
             { id: itemId, user_id: this.user.id }
         );
@@ -414,7 +462,7 @@ class SupabaseManager {
             return { data: null, error: new Error('用户未登录') };
         }
 
-        return this.delete(SUPABASE_CONFIG.database.tables.CART_ITEMS, {
+        return this.delete('cart_items', {
             id: itemId,
             user_id: this.user.id
         });
@@ -426,7 +474,7 @@ class SupabaseManager {
             return { data: null, error: new Error('用户未登录') };
         }
 
-        return this.delete(SUPABASE_CONFIG.database.tables.CART_ITEMS, {
+        return this.delete('cart_items', {
             user_id: this.user.id
         });
     }
@@ -439,46 +487,50 @@ class SupabaseManager {
             return { data: null, error: new Error('用户未登录') };
         }
 
-        // 开始事务
-        const { data: order, error: orderError } = await this.insert(
-            SUPABASE_CONFIG.database.tables.ORDERS,
-            {
-                ...orderData,
-                user_id: this.user.id,
-                order_number: this.generateOrderNumber()
+        try {
+            // 开始事务（通过分步操作模拟）
+            const { data: order, error: orderError } = await this.insert(
+                'orders',
+                {
+                    ...orderData,
+                    user_id: this.user.id,
+                    order_number: this.generateOrderNumber()
+                }
+            );
+
+            if (orderError) {
+                return { data: null, error: orderError };
             }
-        );
 
-        if (orderError) {
-            return { data: null, error: orderError };
+            // 插入订单项目
+            const orderItems = items.map(item => ({
+                order_id: order[0].id,
+                product_id: item.product_id,
+                product_name: item.product_name,
+                product_price: item.product_price,
+                quantity: item.quantity,
+                subtotal: item.subtotal,
+                product_snapshot: item.product_snapshot
+            }));
+
+            const { data: orderItemsData, error: itemsError } = await this.insert(
+                'order_items',
+                orderItems
+            );
+
+            if (itemsError) {
+                // 回滚订单
+                await this.delete('orders', { id: order[0].id });
+                return { data: null, error: itemsError };
+            }
+
+            // 清空购物车
+            await this.clearCart();
+
+            return { data: { ...order[0], items: orderItemsData }, error: null };
+        } catch (error) {
+            return { data: null, error };
         }
-
-        // 插入订单项目
-        const orderItems = items.map(item => ({
-            order_id: order.id,
-            product_id: item.product_id,
-            product_name: item.product_name,
-            product_price: item.product_price,
-            quantity: item.quantity,
-            subtotal: item.subtotal,
-            product_snapshot: item.product_snapshot
-        }));
-
-        const { data: orderItemsData, error: itemsError } = await this.insert(
-            SUPABASE_CONFIG.database.tables.ORDER_ITEMS,
-            orderItems
-        );
-
-        if (itemsError) {
-            // 回滚订单
-            await this.delete(SUPABASE_CONFIG.database.tables.ORDERS, { id: order.id });
-            return { data: null, error: itemsError };
-        }
-
-        // 清空购物车
-        await this.clearCart();
-
-        return { data: { ...order, items: orderItemsData }, error: null };
     }
 
     // 获取用户订单
@@ -493,7 +545,7 @@ class SupabaseManager {
             to: page * limit - 1
         };
 
-        return this.select(SUPABASE_CONFIG.database.tables.ORDERS, {
+        return this.select('orders', {
             filters: { user_id: this.user.id },
             orderBy: { column: 'created_at', ascending: false },
             range
@@ -506,23 +558,27 @@ class SupabaseManager {
             return { data: null, error: new Error('用户未登录') };
         }
 
-        const { data, error } = await this.client
-            .from(SUPABASE_CONFIG.database.tables.ORDERS)
-            .select(`
-                *,
-                order_items (
+        try {
+            const { data, error } = await this.client
+                .from('orders')
+                .select(`
                     *,
-                    products (
-                        name,
-                        images
+                    order_items (
+                        *,
+                        products (
+                            name,
+                            images
+                        )
                     )
-                )
-            `)
-            .eq('id', orderId)
-            .eq('user_id', this.user.id)
-            .single();
+                `)
+                .eq('id', orderId)
+                .eq('user_id', this.user.id)
+                .single();
 
-        return { data, error };
+            return { data, error };
+        } catch (error) {
+            return { data: null, error };
+        }
     }
 
     // ==================== 工具方法 ====================
@@ -530,7 +586,7 @@ class SupabaseManager {
     // 生成订单号
     generateOrderNumber() {
         const timestamp = Date.now().toString();
-        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const random = Math.random().toString(36).substring(2, 8).toUpperCase();
         return `ORD${timestamp}${random}`;
     }
 
@@ -543,14 +599,37 @@ class SupabaseManager {
     isLoggedIn() {
         return this.user !== null;
     }
+
+    // 等待初始化完成
+    async waitForInit() {
+        if (this.initialized) {
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve, reject) => {
+            const checkInit = () => {
+                if (this.initialized) {
+                    resolve();
+                } else {
+                    setTimeout(checkInit, 100);
+                }
+            };
+            
+            const timeout = setTimeout(() => {
+                reject(new Error('Supabase 初始化超时'));
+            }, 10000);
+
+            checkInit();
+            clearTimeout(timeout);
+        });
+    }
 }
 
 // 创建全局实例
 const supabaseManager = new SupabaseManager();
 
-// 导出
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = supabaseManager;
-} else {
-    window.supabaseManager = supabaseManager;
-}
+// 导出到全局作用域
+window.supabaseManager = supabaseManager;
+window.SupabaseManager = SupabaseManager;
+
+console.log('📦 Supabase 客户端模块加载完成');

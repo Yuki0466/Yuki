@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>连接诊断</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>数据库连接诊断工具</h1>
+    
+    <div id="step1" class="step">
+        <h3>步骤 1: 检查配置文件加载</h3>
+        <div id="config-status"></div>
+    </div>
+    
+    <div id="step2" class="step">
+        <h3>步骤 2: 检查 Supabase 库加载</h3>
+        <div id="library-status"></div>
+    </div>
+    
+    <div id="step3" class="step">
+        <h3>步骤 3: 测试基本连接</h3>
+        <div id="connection-status"></div>
+        <button onclick="testConnection()">测试连接</button>
+    </div>
+    
+    <div id="step4" class="step">
+        <h3>步骤 4: 检查数据库表</h3>
+        <div id="table-status"></div>
+        <button onclick="checkTables()">检查表</button>
+    </div>
+
+    <!-- 加载脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    
+    <script>
+        let supabase = null;
+        
+        function updateStatus(elementId, message, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        function addLog(containerId, title, content) {
+            const container = document.getElementById(containerId);
+            const log = document.createElement('div');
+            log.innerHTML = `<h4>${title}</h4><pre>${JSON.stringify(content, null, 2)}</pre>`;
+            container.appendChild(log);
+        }
+        
+        // 步骤 1: 检查配置
+        function checkConfig() {
+            try {
+                if (typeof SUPABASE_CONFIG === 'undefined') {
+                    updateStatus('config-status', '❌ SUPABASE_CONFIG 未定义', 'error');
+                    return false;
+                }
+                
+                if (!SUPABASE_CONFIG.url) {
+                    updateStatus('config-status', '❌ 缺少 URL 配置', 'error');
+                    return false;
+                }
+                
+                if (!SUPABASE_CONFIG.anonKey) {
+                    updateStatus('config-status', '❌ 缺少 anonKey 配置', 'error');
+                    return false;
+                }
+                
+                updateStatus('config-status', '✅ 配置文件加载成功', 'success');
+                addLog('config-status', '配置详情', {
+                    url: SUPABASE_CONFIG.url,
+                    anonKey: SUPABASE_CONFIG.anonKey.substring(0, 20) + '...'
+                });
+                return true;
+                
+            } catch (error) {
+                updateStatus('config-status', `❌ 配置检查失败: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // 步骤 2: 检查库
+        function checkLibrary() {
+            try {
+                if (typeof createClient === 'undefined') {
+                    updateStatus('library-status', '❌ Supabase 库未加载', 'error');
+                    return false;
+                }
+                
+                updateStatus('library-status', '✅ Supabase 库加载成功', 'success');
+                return true;
+                
+            } catch (error) {
+                updateStatus('library-status', `❌ 库检查失败: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // 步骤 3: 测试连接
+        async function testConnection() {
+            if (!checkConfig() || !checkLibrary()) {
+                return;
+            }
+            
+            try {
+                updateStatus('connection-status', '🔄 正在连接...', 'warning');
+                
+                supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+                
+                // 测试连接 - 查询产品表是否存在
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    updateStatus('connection-status', `❌ 连接失败: ${error.message}`, 'error');
+                    addLog('connection-status', '错误详情', error);
+                } else {
+                    updateStatus('connection-status', '✅ 数据库连接成功！', 'success');
+                    addLog('connection-status', '查询结果', data);
+                }
+                
+            } catch (error) {
+                updateStatus('connection-status', `❌ 连接测试失败: ${error.message}`, 'error');
+                addLog('connection-status', '错误详情', error);
+            }
+        }
+        
+        // 步骤 4: 检查表
+        async function checkTables() {
+            if (!supabase) {
+                updateStatus('table-status', '❌ 请先测试连接', 'error');
+                return;
+            }
+            
+            const tables = ['products', 'categories', 'users', 'orders', 'cart_items'];
+            const results = {};
+            
+            for (const table of tables) {
+                try {
+                    const { data, error, count } = await supabase
+                        .from(table)
+                        .select('*', { count: 'exact', head: true });
+                    
+                    if (error) {
+                        results[table] = { error: error.message, exists: false };
+                    } else {
+                        results[table] = { count, exists: true };
+                    }
+                } catch (error) {
+                    results[table] = { error: error.message, exists: false };
+                }
+            }
+            
+            updateStatus('table-status', '✅ 表检查完成', 'success');
+            addLog('table-status', '表状态', results);
+        }
+        
+        // 页面加载时自动检查
+        window.addEventListener('load', () => {
+            checkConfig();
+            checkLibrary();
+        });
+    </script>
+</body>
+</html>
